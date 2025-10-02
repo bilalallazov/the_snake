@@ -1,4 +1,4 @@
-import random
+mport random
 import pygame
 import sys
 
@@ -90,9 +90,9 @@ class Snake(GameObject):
     def update_direction(self):
         """Обновляет направление движения змейки."""
         if self.next_direction is not None:
-            # Проверяем, что змейка не может двигаться назад
-            if (self.length == 1 or 
-                (self.next_direction[0] * -1, self.next_direction[1] * -1) != self.direction):
+            # Правильная проверка противоположного направления
+            opposite_direction = (self.direction[0] * -1, self.direction[1] * -1)
+            if self.next_direction != opposite_direction:
                 self.direction = self.next_direction
             self.next_direction = None
     
@@ -108,8 +108,8 @@ class Snake(GameObject):
         new_head_y = (head_y + self.direction[1] * GRID_SIZE) % SCREEN_HEIGHT
         new_head = (new_head_x, new_head_y)
         
-        # Проверяем столкновение с собой
-        if new_head in self.positions:
+        # Проверяем столкновение с собой (исключая голову)
+        if new_head in self.positions[1:]:
             return False
         
         self.positions.insert(0, new_head)
@@ -155,11 +155,13 @@ def handle_keys(snake):
     
     Args:
         snake (Snake): Объект змейки
+        
+    Returns:
+        bool: False если игра должна завершиться, True в противном случае
     """
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+            return False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 snake.next_direction = UP
@@ -169,6 +171,9 @@ def handle_keys(snake):
                 snake.next_direction = LEFT
             elif event.key == pygame.K_RIGHT:
                 snake.next_direction = RIGHT
+            elif event.key == pygame.K_ESCAPE:
+                return False
+    return True
 
 
 def main():
@@ -180,15 +185,19 @@ def main():
     while apple.position in snake.positions:
         apple.randomize_position()
     
-    while True:
+    running = True
+    while running:
         # Обработка событий
-        handle_keys(snake)
+        running = handle_keys(snake)
+        if not running:
+            break
         
         # Обновление направления движения
         snake.update_direction()
         
         # Движение змейки
         if not snake.move():
+            print(f"Игра окончена! Счёт: {snake.length - 1}")
             snake.reset()
             apple.randomize_position()
             # Убедимся, что яблоко не появляется на змейке после сброса
@@ -211,8 +220,10 @@ def main():
         
         # Обновление экрана
         pygame.display.update()
-        clock.tick(20)
+        clock.tick(10)  # Немного уменьшил скорость для лучшей управляемости
 
 
 if __name__ == "__main__":
     main()
+    pygame.quit()
+    sys.exit()
